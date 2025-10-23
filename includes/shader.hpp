@@ -1,4 +1,4 @@
-#include "glad/glad.h"
+#include "../extLibs/glad/glad.h"
 #include <fstream>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>

@@ -1,6 +1,6 @@
-#include "glad/glad.h"
+#include "../extLibs/glad/glad.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "../extLibs/stb_image.h"
 #include <iostream>
 
 unsigned int loadTexture(const char *path) {

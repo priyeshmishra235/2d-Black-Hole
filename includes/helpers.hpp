@@ -1,5 +1,5 @@
 #pragma once
-#include "glad/glad.h"
+#include "../extLibs/glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <iostream>
@@ -109,27 +109,46 @@ void paddleCollisionCheck(float ball_r, float paddle_x, float paddle_y,
     }
   }
 }
-void makeCircle(std::vector<float> &circleVertices, const int numSegments,
-                const float radius, unsigned int &circleVao,
-                unsigned int &circleVbo) {
-  circleVertices.push_back(0.0f);
-  circleVertices.push_back(0.0f);
+void makeCircle(std::vector<float> &vertices, int numSegments, float radius,
+                unsigned int &VAO, unsigned int &VBO) {
+  vertices.clear();
+  vertices.reserve((numSegments + 2) * 4);
+
+  vertices.push_back(0.0f); // x
+  vertices.push_back(0.0f); // y
+  vertices.push_back(0.5f); // u
+  vertices.push_back(0.5f); // v
+
   for (int i = 0; i <= numSegments; ++i) {
-    float theta = 2.0f * 3.1415926f * float(i) / float(numSegments);
-    float x = radius * cosf(theta);
-    float y = radius * sinf(theta);
-    circleVertices.push_back(x);
-    circleVertices.push_back(y);
+    float angle = 2.0f * M_PI * i / numSegments;
+    float x = radius * cos(angle);
+    float y = radius * sin(angle);
+
+    // Mapping circle point to [0,1] texture coords
+    float u = (x / radius + 1.0f) * 0.5f;
+    float v = (y / radius + 1.0f) * 0.5f;
+
+    vertices.push_back(x);
+    vertices.push_back(y);
+    vertices.push_back(u);
+    vertices.push_back(v);
   }
-  glGenVertexArrays(1, &circleVao);
-  glGenBuffers(1, &circleVbo);
-  glBindVertexArray(circleVao);
-  glBindBuffer(GL_ARRAY_BUFFER, circleVbo);
-  glBufferData(GL_ARRAY_BUFFER, circleVertices.size() * sizeof(float),
-               circleVertices.data(), GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
+
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+
+  glBindVertexArray(VAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float),
+               vertices.data(), GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                        (void *)(2 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+
   glBindVertexArray(0);
 }
 void genPaddle(unsigned int &paddleVao, unsigned int &paddleVbo,

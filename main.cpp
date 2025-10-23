@@ -1,7 +1,7 @@
-#include "glad/glad.h"
-#include "helpers.hpp"
-#include "shader.hpp"
-#include "texture.hpp"
+#include "extLibs/glad/glad.h"
+#include "includes/helpers.hpp"
+#include "includes/shader.hpp"
+#include "includes/texture.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -46,6 +46,7 @@ int main() {
   // ╰──────────────╯
   Shader paddleShader("shaders/paddle.vert", "shaders/paddle.frag");
   Shader midlineShader("shaders/midLine.vert", "shaders/midLine.frag");
+  Shader bgShader("shaders/bg.vert", "shaders/bg.frag");
   Shader ballShader("shaders/ball.vert", "shaders/ball.frag");
 
   // ╭────────────╮
@@ -53,7 +54,6 @@ int main() {
   // ╰────────────╯
   glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(WIDTH), 0.0f,
                                     static_cast<float>(HEIGHT), -1.0f, 1.0f);
-
   // Passing projection to all shaders
   paddleShader.use();
   paddleShader.setMat4("projection", glm::value_ptr(projection));
@@ -61,6 +61,8 @@ int main() {
   midlineShader.setMat4("projection", glm::value_ptr(projection));
   ballShader.use();
   ballShader.setMat4("projection", glm::value_ptr(projection));
+  bgShader.use();
+  bgShader.setMat4("projection", glm::value_ptr(projection));
 
   // ╭────────╮
   // │ Paddle │
@@ -84,7 +86,9 @@ int main() {
   // ╭─────────╮
   // │ Texture │
   // ╰─────────╯
-  unsigned int texture = loadTexture("lines.png");
+  unsigned int midlineTexture = loadTexture("assets/lines.png");
+  unsigned int bgTex = loadTexture("assets/bg.png");
+  unsigned int ballTex = loadTexture("assets/ball.jpg");
 
   // ╭─────────────╮
   // │ Render Loop │
@@ -113,12 +117,44 @@ int main() {
 
     // Check if anyone scored
     scoreUpdate(radius);
+
+    // ╭────────────╮
+    // │ Background │
+    // ╰────────────╯
+    bgShader.use();
+    bgShader.setVec3("color", glm::vec3(0.0f, 0.0f, 1.0f));
+    bgShader.setFloat("repeatY", 1.0f);
+    bgShader.setInt("tex", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, bgTex);
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(WIDTH / 2.0f, HEIGHT / 2.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(WIDTH, HEIGHT, 1.0f));
+    bgShader.setMat4("model", glm::value_ptr(model));
+    glBindVertexArray(paddleVao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    // ╭──────────╮
+    // │ Mid Line │
+    // ╰──────────╯
+    midlineShader.use();
+    midlineShader.setFloat("repeatY", HEIGHT / 32.0f);
+    midlineShader.setInt("tex", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, midlineTexture);
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(WIDTH / 2.0f, HEIGHT / 2.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(10.0f, HEIGHT, 1.0f));
+    midlineShader.setMat4("model", glm::value_ptr(model));
+    glBindVertexArray(paddleVao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
     // ╭──────────────╮
     // │ Right Paddle │
     // ╰──────────────╯
     paddleShader.use();
     paddleShader.setVec3("color", glm::vec3(1.0f, 0.0f, 0.0f));
-    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::mat4(1.0f);
     model = glm::translate(
         model,
         glm::vec3(WIDTH - PADDLE_X_OFFSET - PADDLE_WIDTH / 2.0f, ryPos, 0.0f));
@@ -143,32 +179,20 @@ int main() {
     // ╰────────╯
     ballShader.use();
     ballShader.setVec3("color", glm::vec3(1.0f));
+    ballShader.setInt("tex", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, ballTex);
     model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(cx, cy, 0.0f));
     ballShader.setMat4("model", glm::value_ptr(model));
     glBindVertexArray(circleVao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, numSegments + 2);
 
-    // ╭──────────╮
-    // │ Mid Line │
-    // ╰──────────╯
-    midlineShader.use();
-    midlineShader.setFloat("repeatY", HEIGHT / 32.0f);
-    midlineShader.setInt("tex", 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(WIDTH / 2.0f, HEIGHT / 2.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(10.0f, HEIGHT, 1.0f));
-    midlineShader.setMat4("model", glm::value_ptr(model));
-    glBindVertexArray(paddleVao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
 
-  glDeleteTextures(1, &texture);
+  glDeleteTextures(1, &midlineTexture);
   glDeleteBuffers(1, &paddleVbo);
   glDeleteBuffers(1, &paddleEbo);
   glDeleteVertexArrays(1, &paddleVao);
