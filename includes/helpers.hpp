@@ -12,7 +12,8 @@ const unsigned int WIDTH = 800;
 const unsigned int HEIGHT = 600;
 
 // ball params
-float vy{0.0f}, vx{0.0f}, dt{0.016f};
+float vy{0.0f}, vx{0.0f};
+
 float cx = WIDTH / 2.0f;
 float cy = HEIGHT / 2.0f;
 float lyPos = HEIGHT / 2.0f;
